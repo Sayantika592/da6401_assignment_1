@@ -35,25 +35,28 @@ class NeuralNetwork:
                     self.layers.append(Sigmoid())
                 elif cli_args.activation == 'tanh':
                     self.layers.append(Tanh())
-        self.layers.append(Softmax())
+        if cli_args.loss == "cross_entropy":
+            self.layers.append(Softmax())
 
         if cli_args.loss == 'cross_entropy':
             self.loss = CrossEntropy()
         elif cli_args.loss == 'mse':
             self.loss = MSE()
         
+        # few parametera of optimizers which are not mentioned in the CLI arguments are hardcoded as default values
+
         if cli_args.optimizer == 'sgd':
-            self.optimizer = SGD(cli_args.learning_rate)
+            self.optimizer = SGD(cli_args.learning_rate, cli_args.weight_decay)
         if cli_args.optimizer == 'momentum':
-            self.optimizer = Momentum(cli_args.learning_rate, cli_args.momentum)
+            self.optimizer = Momentum(cli_args.learning_rate, gamma = 0.9, weight_decay = cli_args.weight_decay)
         if cli_args.optimizer == 'nag':         
-            self.optimizer = NAG(cli_args.learning_rate, cli_args.momentum)
+            self.optimizer = NAG(cli_args.learning_rate, gamma = 0.9, weight_decay = cli_args.weight_decay)
         if cli_args.optimizer == 'rmsprop':
-            self.optimizer = RMSProp(cli_args.learning_rate, cli_args.rms_decay)
+            self.optimizer = RMSProp(cli_args.learning_rate, gamma = 0.9, eps = 1e-8, weight_decay = cli_args.weight_decay)
         if cli_args.optimizer == 'adam':            
-            self.optimizer = Adam(cli_args.learning_rate, cli_args.adam_beta1, cli_args.adam_beta2)
+            self.optimizer = Adam(cli_args.learning_rate, gamma1 = 0.9, gamma2 = 0.999, eps = 1e-8, weight_decay = cli_args.weight_decay)
         if cli_args.optimizer == 'nadam':
-            self.optimizer = Nadam(cli_args.learning_rate, cli_args.adam_beta1, cli_args.adam_beta2)
+            self.optimizer = Nadam(cli_args.learning_rate, gamma1 = 0.9, gamma2 = 0.999, eps = 1e-8, weight_decay = cli_args.weight_decay)
     
     def forward(self, X):
         """
@@ -84,7 +87,7 @@ class NeuralNetwork:
         dZ = self.loss.backward()
 
         for layer in reversed(self.layers):
-            if isinstance(layer, Softmax):
+            if isinstance(layer, Softmax) and isinstance(self.loss, CrossEntropy):
                 continue
             dZ = layer.backward(dZ)
 
@@ -111,6 +114,7 @@ class NeuralNetwork:
 
                 y_pred = self.forward(X_batch)
                 loss = self.backward(y_batch, y_pred)
+                #loss = np.mean(loss)
                 self.update_weights()
             print(f"Epoch {epoch+1}, Loss: {loss:.4f}")
     

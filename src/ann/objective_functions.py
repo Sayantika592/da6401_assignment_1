@@ -13,7 +13,7 @@ class MSE:
         self.y_true = y_true
         self.y_pred = y_pred
         self.N = y_true.shape[0]
-        loss = np.mean((y_true - y_pred) ** 2)
+        loss = np.sum((y_true - y_pred) ** 2)/self.N
         return loss
     
     def backward(self):
@@ -33,7 +33,7 @@ class CrossEntropy:
         self.y_true = y_true
         self.y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15)
         self.N = y_true.shape[0]
-        loss = -(np.sum(y_true * np.log(self.y_pred), axis=1))/self.N
+        loss = -np.sum(y_true * np.log(self.y_pred)) / self.N
         return loss
         
     def backward(self):
@@ -41,5 +41,5 @@ class CrossEntropy:
         Gradient of Cross-Entropy Loss w.r.t. predictions
         dL/dy_pred = - (y_true / y_pred) / n
         """
-        dL_dy_pred = (self.y_true - self.y_pred) / self.N
+        dL_dy_pred = (self.y_pred - self.y_true)/self.N
         return dL_dy_pred

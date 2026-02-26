@@ -40,6 +40,35 @@ class Momentum:
         layer.W -= self.vW[key]
         layer.b -= self.vb[key]  
 
+class NAG:
+    def __init__(self, learning_rate, gamma=0.9, weight_decay=0.0):
+        self.lr = learning_rate
+        self.gamma = gamma
+        self.wd = weight_decay
+        self.vW = {}
+        self.vb = {}
+
+    def update(self, layer):
+        key = id(layer)
+
+        # Initialize velocity for this layer if first time
+        if key not in self.vW:
+            self.vW[key] = np.zeros_like(layer.W)
+            self.vb[key] = np.zeros_like(layer.b)
+
+        # Apply weight decay
+        gW = layer.grad_W + self.wd * layer.W
+        gb = layer.grad_b
+
+        # Update velocity: v = γv + ηg
+        self.vW[key] = self.gamma * self.vW[key] + self.lr * gW
+        self.vb[key] = self.gamma * self.vb[key] + self.lr * gb
+
+        # NAG-style update: W = W - (γv + ηg)  --> using the current velocity for calculating the look ahead gradient
+        layer.W -= (self.gamma * self.vW[key] + self.lr * gW)
+        layer.b -= (self.gamma * self.vb[key] + self.lr * gb)
+
+
 class RMSProp:
     def __init__(self, learning_rate, gamma=0.9, eps=1e-8, weight_decay = 0.0):
         self.lr = learning_rate
@@ -109,35 +138,7 @@ class Adam:
         # Update
         layer.W -= self.lr * mW_hat / (np.sqrt(vW_hat) + self.eps)
         layer.b -= self.lr * mb_hat / (np.sqrt(vb_hat) + self.eps)
-
-class NAG:
-    def __init__(self, learning_rate, gamma=0.9, weight_decay=0.0):
-        self.lr = learning_rate
-        self.gamma = gamma
-        self.wd = weight_decay
-        self.vW = {}
-        self.vb = {}
-
-    def update(self, layer):
-        key = id(layer)
-
-        # Initialize velocity for this layer if first time
-        if key not in self.vW:
-            self.vW[key] = np.zeros_like(layer.W)
-            self.vb[key] = np.zeros_like(layer.b)
-
-        # Apply weight decay
-        gW = layer.grad_W + self.wd * layer.W
-        gb = layer.grad_b
-
-        # Update velocity: v = γv + ηg
-        self.vW[key] = self.gamma * self.vW[key] + self.lr * gW
-        self.vb[key] = self.gamma * self.vb[key] + self.lr * gb
-
-        # NAG-style update: W = W - (γv + ηg)  --> using the current velocity for calculating the look ahead gradient
-        layer.W -= (self.gamma * self.vW[key] + self.lr * gW)
-        layer.b -= (self.gamma * self.vb[key] + self.lr * gb)
-
+        
 class Nadam:
     def __init__(self, learning_rate, gamma1=0.9, gamma2=0.999, eps=1e-8, weight_decay=0.0):
         self.lr = learning_rate

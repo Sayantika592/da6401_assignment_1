@@ -24,7 +24,7 @@ class Tanh:
 class ReLU:
     def forward(self, X):
         self.mask = X >0
-        return self.out
+        return np.maximum(0, X)
     
     def backward(self, dA):
         return dA * self.mask
@@ -37,4 +37,12 @@ class Softmax:
         return self.out
     
     def backward(self, dA):
-        return dA
+        batch_size, num_classes = self.out.shape
+        dZ = np.zeros_like(self.out)
+
+        for i in range(batch_size):
+            s = self.out[i].reshape(-1, 1)
+            jacobian = np.diagflat(s) - np.dot(s, s.T)
+            dZ[i] = np.dot(jacobian, dA[i])
+
+        return dZ

@@ -2,12 +2,10 @@
 Data Loading and Preprocessing
 Handles MNIST and Fashion-MNIST datasets
 """
-from more_itertools import one
-
 from keras.datasets import mnist, fashion_mnist
 import numpy as np
 
-def load_data():
+def load_data(dataset):
     if dataset == "mnist":
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
     elif dataset == "fashion_mnist":

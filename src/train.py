@@ -5,6 +5,7 @@ Entry point for training neural networks with command-line arguments
 
 import argparse
 import json
+import os
 import numpy as np
 
 from ann.neural_layer import Linear
@@ -32,6 +33,7 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description='Train a neural network')
 
+    parser.add_argument("-m", "--model_path", required=True)
     parser.add_argument("-d", "--dataset", required=True)
     parser.add_argument("-e", "--epochs", type=int, required=True)
     parser.add_argument("-b", "--batch_size", type=int, required=True)
@@ -68,15 +70,42 @@ def main():
     """
     args = parse_arguments()
 
+    # To ensure the saved directory exists
+    save_dir = args.model_path
+    if save_dir.endswith(".npy") or save_dir.endswith(".json"):
+        save_dir = os.path.dirname(save_dir) or "."
+    os.makedirs(save_dir, exist_ok=True)
+
+    config_path = os.path.join(save_dir, "best_config.json")
+    model_path = os.path.join(save_dir, "best_model.npy")
+
+    # load f1 score from the previously saved config to compare with the current model's f1 score and save the model only if the current f1 score is better than the previously saved one. If no previous model exists, start fresh and save the current model as the best model.
+    best_f1 = -1.0
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r") as f:
+                prev_config = json.load(f)
+                best_f1 = prev_config.get("best_f1", -1.0)
+                print(f"Loaded previous best F1: {best_f1:.4f}")
+        except Exception:
+            print("Could not read previous config. Starting fresh.")
+
+    else:
+        print("No previous best model found. Starting fresh.")
+
     X_train, y_train, X_test, y_test = load_data(args.dataset)
 
     args.input_size = X_train.shape[1]
     args.output_size = y_train.shape[1]
 
     model = NeuralNetwork(args)
-
-    best_f1 = -1.0
+        
     for epoch in range(args.epochs):
+
+        perm = np.random.permutation(X_train.shape[0])
+        X_train = X_train[perm]
+        y_train = y_train[perm]
+
         model.train(X_train, y_train, 1, args.batch_size)  # Train for one epoch
         accuracy = model.evaluate(X_test, y_test)
         print(f"Epoch {epoch+1}/{args.epochs}, Accuracy: {accuracy:.4f}")
@@ -104,10 +133,11 @@ def main():
                 "num_layers": args.num_layers,
                 "hidden_sizes": args.hidden_sizes,
                 "activation": args.activation,
-                "weight_init": args.weight_init
+                "weight_init": args.weight_init,
+                "best_f1": best_f1
             }
 
-            with open("best_config.json", "w") as f:
+            with open(config_path, "w") as f:
                 json.dump(config, f)
 
             print(f"New best model saved with F1 Score: {best_f1:.4f}")

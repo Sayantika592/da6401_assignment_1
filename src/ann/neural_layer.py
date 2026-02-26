@@ -20,7 +20,8 @@ class Linear:
         return np.dot(X, self.W) + self.b
     
     def backward(self, dZ):
-        self.dW = np.dot(self.X.T, dZ)
-        self.db = np.sum(dZ, axis=0, keepdims=True)
+        batch_size = self.X.shape[0]
+        self.grad_W = np.dot(self.X.T, dZ) #/batch_size
+        self.grad_b = np.sum(dZ, axis=0, keepdims=True) #/batch_size
         dX = np.dot(dZ, self.W.T)
         return dX
