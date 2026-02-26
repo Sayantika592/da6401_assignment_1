@@ -2,13 +2,12 @@
 Main Neural Network Model class
 Handles forward and backward propagation loops
 """
-
-from pydoc import cli
+import numpy as np
 
 from ann.activations import ReLU, Sigmoid, Softmax, Tanh
 from ann.neural_layer import Linear
 from ann.objective_functions import MSE, CrossEntropy
-from ann.optimizers import SGD
+from ann.optimizers import NAG, SGD, Adam, Momentum, Nadam, RMSProp
 
 
 class NeuralNetwork:
@@ -36,14 +35,25 @@ class NeuralNetwork:
                     self.layers.append(Sigmoid())
                 elif cli_args.activation == 'tanh':
                     self.layers.append(Tanh())
-            self.layers.append(Softmax())
+        self.layers.append(Softmax())
 
-        if cli_args.loss_fn == 'cross_entropy':
-            self.loss_fn = CrossEntropy()
-        elif cli_args.loss_fn == 'mse':
-            self.loss_fn = MSE()
-
-        self.optimizer = SGD(cli_args.learning_rate)
+        if cli_args.loss == 'cross_entropy':
+            self.loss = CrossEntropy()
+        elif cli_args.loss == 'mse':
+            self.loss = MSE()
+        
+        if cli_args.optimizer == 'sgd':
+            self.optimizer = SGD(cli_args.learning_rate)
+        if cli_args.optimizer == 'momentum':
+            self.optimizer = Momentum(cli_args.learning_rate, cli_args.momentum)
+        if cli_args.optimizer == 'nag':         
+            self.optimizer = NAG(cli_args.learning_rate, cli_args.momentum)
+        if cli_args.optimizer == 'rmsprop':
+            self.optimizer = RMSProp(cli_args.learning_rate, cli_args.rms_decay)
+        if cli_args.optimizer == 'adam':            
+            self.optimizer = Adam(cli_args.learning_rate, cli_args.adam_beta1, cli_args.adam_beta2)
+        if cli_args.optimizer == 'nadam':
+            self.optimizer = Nadam(cli_args.learning_rate, cli_args.adam_beta1, cli_args.adam_beta2)
     
     def forward(self, X):
         """
@@ -70,11 +80,11 @@ class NeuralNetwork:
         Returns:
             return grad_w, grad_b in layers
         """
-        loss = self.loss_fn.forward(y_true, y_pred)
-        dZ = self.loss_fn.backward()
+        loss = self.loss.forward(y_true, y_pred)
+        dZ = self.loss.backward()
 
         for layer in reversed(self.layers):
-            if isinstance == "Softmax":
+            if isinstance(layer, Softmax):
                 continue
             dZ = layer.backward(dZ)
 
@@ -112,4 +122,4 @@ class NeuralNetwork:
         y_pred_labels = np.argmax(y_pred, axis=1)
         y_true_labels = np.argmax(y, axis=1)
         accuracy = np.mean(y_pred_labels == y_true_labels)
-        print(f"Accuracy: {accuracy:.4f}")
+        return accuracy

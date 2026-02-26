@@ -5,12 +5,12 @@ Entry point for training neural networks with command-line arguments
 
 import argparse
 import json
-from logging import config
 import numpy as np
 
 from ann.neural_layer import Linear
 from ann.neural_network import NeuralNetwork
 from utils.data_loader import load_data
+from sklearn.metrics import f1_score
 
 def parse_arguments():
     """
@@ -46,13 +46,21 @@ def parse_arguments():
     
     return parser.parse_args()
 
-def compute_f1(model, X, y):
+def compute_f1_score(model, X, y):
+    """
+    Compute F1 score for model predictions.
+    
+    Args:
+        model: Trained neural network model
+        X: Input data
+        y: True labels (one-hot encoded)
+    Returns:
+        F1 score for the model's predictions
+    """
     y_pred = model.forward(X)
     y_pred_labels = np.argmax(y_pred, axis=1)
     y_true_labels = np.argmax(y, axis=1)
-
-    return f1_score(y_true_labels, y_pred_labels, average="macro")
-
+    return f1_score(y_true_labels, y_pred_labels, average='weighted')
 
 def main():
     """
@@ -61,35 +69,48 @@ def main():
     args = parse_arguments()
 
     X_train, y_train, X_test, y_test = load_data(args.dataset)
+
+    args.input_size = X_train.shape[1]
+    args.output_size = y_train.shape[1]
+
     model = NeuralNetwork(args)
-    model.train(X_train, y_train, args.epochs, args.batch_size)
-    accuracy = model.evaluate(X_test, y_test)
-    print(f"Test accuracy: {accuracy}")
-    
-    # Save model weights
-    weights = []
-    for layer in model.layers:
-        if isinstance(layer, Linear):
-            weights.append((layer.W, layer.b))
 
-    np.save("best_model.npy", weights)
+    best_f1 = -1.0
+    for epoch in range(args.epochs):
+        model.train(X_train, y_train, 1, args.batch_size)  # Train for one epoch
+        accuracy = model.evaluate(X_test, y_test)
+        print(f"Epoch {epoch+1}/{args.epochs}, Accuracy: {accuracy:.4f}")
+        f1 = compute_f1_score(model, X_test, y_test)
+        print(f"Epoch {epoch+1}/{args.epochs}, F1 Score: {f1:.4f}")
 
-    config = {
-        "dataset": args.dataset,
-        "epochs": args.epochs,
-        "batch_size": args.batch_size,
-        "loss": args.loss,
-        "optimizer": args.optimizer,
-        "learning_rate": args.learning_rate,
-        "weight_decay": args.weight_decay,
-        "num_layers": args.num_layers,
-        "hidden_sizes": args.hidden_sizes,
-        "activation": args.activation,
-        "weight_init": args.weight_init
-    }
+        if f1 > best_f1:
+            best_f1 = f1
 
-    with open("best_config.json", "w") as f:
-        json.dump(config, f)
+            weights = [] # save model weights in .npy file but only for those with best f1 score
+            for layer in model.layers:
+                if isinstance(layer, Linear):
+                    weights.append({"W": layer.W, "b": layer.b})
+
+            np.save("best_model.npy", weights)
+
+            config = {
+                "dataset": args.dataset,
+                "epochs": args.epochs,
+                "batch_size": args.batch_size,
+                "loss": args.loss,
+                "optimizer": args.optimizer,
+                "learning_rate": args.learning_rate,
+                "weight_decay": args.weight_decay,
+                "num_layers": args.num_layers,
+                "hidden_sizes": args.hidden_sizes,
+                "activation": args.activation,
+                "weight_init": args.weight_init
+            }
+
+            with open("best_config.json", "w") as f:
+                json.dump(config, f)
+
+            print(f"New best model saved with F1 Score: {best_f1:.4f}")
 
     print("Training complete!")
 
