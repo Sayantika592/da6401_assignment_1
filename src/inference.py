@@ -24,6 +24,8 @@ def parse_arguments():
     - activation: Activation function ('relu', 'sigmoid', 'tanh')
     """
     parser = argparse.ArgumentParser(description='Run inference on test set')
+
+    parser.add_argument("-w_p", "--wandb_project", default=None)
     parser.add_argument("-m", "--model_path", required=True)
     parser.add_argument("-d", "--dataset", required=True)
     parser.add_argument("-e", "--epochs", type=int, required=True)
@@ -44,16 +46,17 @@ def load_model(model_path, args):
     """
     Load trained model from disk.
     """
-    weights = np.load(model_path, allow_pickle=True) # weights loaded from .npy file created during training
+    weights = np.load(model_path, allow_pickle=True).item() # weights loaded from .npy file created during training
 
     model = NeuralNetwork(args) # create model architecture based on args (hidden layers, activation, etc.)
 
-    idx=0
-    for layer in model.layers:   # weights got from the model saved in .npy file are assigned to the corresponding layers in the model architecture
-        if isinstance(layer,Linear):
-            layer.W = weights[idx]["W"]
-            layer.b = weights[idx]["b"]
-            idx += 1
+    #idx=0
+    #for layer in model.layers:   # weights got from the model saved in .npy file are assigned to the corresponding layers in the model architecture
+        #if isinstance(layer,Linear):
+            #layer.W = weights[idx]["W"]
+            #layer.b = weights[idx]["b"]
+            #idx += 1
+    model.set_weights(weights) # weights got from the model saved in .npy file are assigned to the corresponding layers in the model architecture
 
     return model
         
@@ -76,7 +79,7 @@ def evaluate_model(model, X_test, y_test):
     precision = precision_score(y_true_labels, y_pred_labels, average='weighted')
     recall = recall_score(y_true_labels, y_pred_labels, average='weighted')
 
-    loss = model.loss_fn.forward(y_test, logits) # calculate loss using the model's loss function
+    loss = model.loss.forward(y_test, logits) # calculate loss using the model's loss function
 
     return {
         "logits": logits,
@@ -97,6 +100,9 @@ def main():
     args = parse_arguments()
 
     _, _, X_test, y_test = load_data(args.dataset) # load test data
+
+    args.input_size = X_test.shape[1] # set input size based on test data features
+    args.output_size = y_test.shape[1] # set output size based on test data labels
     
     model = load_model(args.model_path, args) # load trained model
 

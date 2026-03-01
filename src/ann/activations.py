@@ -19,7 +19,7 @@ class Tanh:
         return self.out
     
     def backward(self, dA):
-        return dA * self.out * (1-(self.out)**2)
+        return dA * (1 - (self.out)**2)
     
 class ReLU:
     def forward(self, X):

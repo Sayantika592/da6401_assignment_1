@@ -24,39 +24,47 @@ class NeuralNetwork:
         """
         self.cli_args = cli_args
         self.layers = []
+        self.activations = []
         sizes = [cli_args.input_size] + cli_args.hidden_sizes + [cli_args.output_size]
 
         for i in range(len(sizes) - 1):
             self.layers.append(Linear(sizes[i], sizes[i+1], weight_init=cli_args.weight_init))
             if i < len(sizes) - 2:  # Add activation for hidden layers
                 if cli_args.activation == 'relu':
-                    self.layers.append(ReLU())
+                    self.activations.append(ReLU())
                 elif cli_args.activation == 'sigmoid':
-                    self.layers.append(Sigmoid())
+                    self.activations.append(Sigmoid())
                 elif cli_args.activation == 'tanh':
-                    self.layers.append(Tanh())
-        if cli_args.loss == "cross_entropy":
-            self.layers.append(Softmax())
+                    self.activations.append(Tanh())
+
+                else:
+                    raise ValueError(f"Unsupported activation function: {cli_args.activation}")
+        #if cli_args.loss == "cross_entropy":
+            #self.layers.append(Softmax())
 
         if cli_args.loss == 'cross_entropy':
             self.loss = CrossEntropy()
         elif cli_args.loss == 'mse':
             self.loss = MSE()
+        else:
+            raise ValueError(f"Unsupported loss function: {cli_args.loss}")
         
         # few parametera of optimizers which are not mentioned in the CLI arguments are hardcoded as default values
 
         if cli_args.optimizer == 'sgd':
             self.optimizer = SGD(cli_args.learning_rate, cli_args.weight_decay)
-        if cli_args.optimizer == 'momentum':
+        elif cli_args.optimizer == 'momentum':
             self.optimizer = Momentum(cli_args.learning_rate, gamma = 0.9, weight_decay = cli_args.weight_decay)
-        if cli_args.optimizer == 'nag':         
+        elif cli_args.optimizer == 'nag':         
             self.optimizer = NAG(cli_args.learning_rate, gamma = 0.9, weight_decay = cli_args.weight_decay)
-        if cli_args.optimizer == 'rmsprop':
+        elif cli_args.optimizer == 'rmsprop':
             self.optimizer = RMSProp(cli_args.learning_rate, gamma = 0.9, eps = 1e-8, weight_decay = cli_args.weight_decay)
-        if cli_args.optimizer == 'adam':            
+        elif cli_args.optimizer == 'adam':            
             self.optimizer = Adam(cli_args.learning_rate, gamma1 = 0.9, gamma2 = 0.999, eps = 1e-8, weight_decay = cli_args.weight_decay)
-        if cli_args.optimizer == 'nadam':
+        elif cli_args.optimizer == 'nadam':
             self.optimizer = Nadam(cli_args.learning_rate, gamma1 = 0.9, gamma2 = 0.999, eps = 1e-8, weight_decay = cli_args.weight_decay)
+        else:
+            raise ValueError(f"Unsupported optimizer: {cli_args.optimizer}")
     
     def forward(self, X):
         """
@@ -68,8 +76,12 @@ class NeuralNetwork:
         Returns:
             Output logits
         """
-        for layers in self.layers:
-            X = layers.forward(X)
+        self.cached_activations = []
+        for i, layer in enumerate(self.layers):
+            X = layer.forward(X)
+            if i < len(self.activations):
+                X = self.activations[i].forward(X)
+                self.cached_activations.append(X) # cache activations for dead neuron ratio calculation
         return X
     
     def backward(self, y_true, y_pred):
@@ -83,23 +95,46 @@ class NeuralNetwork:
         Returns:
             return grad_w, grad_b in layers
         """
-        loss = self.loss.forward(y_true, y_pred)
+        self.loss.forward(y_true, y_pred)
         dZ = self.loss.backward()
 
-        for layer in reversed(self.layers):
-            if isinstance(layer, Softmax) and isinstance(self.loss, CrossEntropy):
-                continue
+        grad_W_list = []
+        grad_b_list = []
+
+        for i in reversed(range(len(self.layers))):
+            #if isinstance(layer, Softmax) and isinstance(self.loss, CrossEntropy):
+                #continue
+
+            if i < len(self.activations):
+                dZ = self.activations[i].backward(dZ)
+
+            layer = self.layers[i]
             dZ = layer.backward(dZ)
 
-        return loss
+            # Store gradients for Linear layers
+            grad_W_list.append(layer.grad_W)
+            grad_b_list.append(layer.grad_b)    
+
+        # Convert to object arrays
+        self.grad_W = np.empty(len(grad_W_list), dtype=object)
+        self.grad_b = np.empty(len(grad_b_list), dtype=object)
+
+        for i, (gw, gb) in enumerate(zip(grad_W_list, grad_b_list)):
+            self.grad_W[i] = gw
+            self.grad_b[i] = gb
+
+        #print("Shape of grad_Ws:", self.grad_W.shape, self.grad_W[1].shape)
+        #print("Shape of grad_bs:", self.grad_b.shape, self.grad_b[1].shape)
+
+        return self.grad_W, self.grad_b
     
     def update_weights(self):
         """
         Update weights using the optimizer.
         """
         for layer in self.layers:
-            if isinstance(layer, Linear):
-                self.optimizer.update(layer)
+            #if isinstance(layer, Linear):
+            self.optimizer.update(layer)
     
     def train(self, X_train, y_train, epochs, batch_size):
         """
@@ -112,9 +147,10 @@ class NeuralNetwork:
                 X_batch = X_train[i:i+batch_size]
                 y_batch = y_train[i:i+batch_size]
 
-                y_pred = self.forward(X_batch)
-                loss = self.backward(y_batch, y_pred)
+                logits = self.forward(X_batch)
+                loss = self.loss.forward(y_batch, logits)   # loss computed for each batch and printed at the end of each epoch
                 #loss = np.mean(loss)
+                self.backward(y_batch, logits) # gradients computed for each batch and weights updated after each batch
                 self.update_weights()
             print(f"Epoch {epoch+1}, Loss: {loss:.4f}")
     
@@ -127,3 +163,19 @@ class NeuralNetwork:
         y_true_labels = np.argmax(y, axis=1)
         accuracy = np.mean(y_pred_labels == y_true_labels)
         return accuracy
+    
+    def get_weights(self):
+        d = {}
+        for i, layer in enumerate(self.layers):
+            d[f"W{i}"] = layer.W.copy()
+            d[f"b{i}"] = layer.b.copy()
+        return d
+
+    def set_weights(self, weight_dict):
+        for i, layer in enumerate(self.layers):
+            w_key = f"W{i}"
+            b_key = f"b{i}"
+            if w_key in weight_dict:
+                layer.W = weight_dict[w_key].copy()
+            if b_key in weight_dict:
+                layer.b = weight_dict[b_key].copy()
