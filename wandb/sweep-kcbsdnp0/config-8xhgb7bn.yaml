@@ -1,0 +1,18 @@
+wandb_version: 1
+
+activation:
+  value: relu
+architecture:
+  value:
+    hidden_sizes: 128 64 32
+    num_layers: 3
+batch_size:
+  value: 64
+learning_rate:
+  value: 0.0005
+loss:
+  value: cross_entropy
+optimizer:
+  value: adam
+weight_init:
+  value: xavier

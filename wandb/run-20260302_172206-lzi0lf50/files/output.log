@@ -1,0 +1,7 @@
+Loaded previous best F1: 0.9803
+Epoch 1/5, Loss: 0.2316, Acc: 0.9599, F1: 0.9599
+Epoch 2/5, Loss: 0.1229, Acc: 0.9631, F1: 0.9631
+Epoch 3/5, Loss: 0.0962, Acc: 0.9628, F1: 0.9628
+Epoch 4/5, Loss: 0.0855, Acc: 0.9708, F1: 0.9707
+Epoch 5/5, Loss: 0.0702, Acc: 0.9687, F1: 0.9686
+Training complete!

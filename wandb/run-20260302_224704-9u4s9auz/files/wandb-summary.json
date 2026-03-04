@@ -1,0 +1,1 @@
+{"tanh_saturation_ratio":0.20414225260416666,"_timestamp":1.7724718475031552e+09,"batch_loss":0.14611555567721823,"_wandb":{"runtime":21},"epoch":5,"train_loss":0.07286335346789458,"test_f1":0.9729862270165484,"_runtime":21,"val_loss":0.08795923936335312,"test_accuracy":0.973,"_step":2349,"grad_norm_layer1":0.5310278855462044}

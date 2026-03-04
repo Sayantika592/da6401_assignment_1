@@ -1,29 +1,53 @@
-"""
-Data Loading and Preprocessing
-Handles MNIST and Fashion-MNIST datasets
-"""
-from keras.datasets import mnist, fashion_mnist
+from sklearn.datasets import fetch_openml
 import numpy as np
+import os
 
-def load_data(dataset):
-    if dataset == "mnist":
-        (X_train, y_train), (X_test, y_test) = mnist.load_data()
-    elif dataset == "fashion_mnist":
-        (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
+def load_data(dataset_name):
+    cache_file = f"src/{dataset_name}_cache.npz"
 
-    
-    # Pixel normalized to [0, 1] for faster and better training convergence as inputs are small
-    X_train = X_train / 255.0
-    X_test = X_test / 255.0
+    if os.path.exists(cache_file):
+        print(f"Loading {dataset_name} from local cache...")
+        data = np.load(cache_file)
+        return data['X_train'], data['y_train'], data['X_test'], data['y_test']
 
-    X_train = X_train.reshape(X_train.shape[0], -1) # flatten 28x28 images to 784-dimensional vectors
-    X_test = X_test.reshape(X_test.shape[0], -1)
+    print(f"Downloading {dataset_name} from OpenML...") # Data is downloaded using openml in order to avoid using TensorFlow in the backend which is required by keras datasets.
 
-    def one_hot_encode(labels, num_classes=10):
-        onehot= np.zeros((labels.shape[0], num_classes))
-        onehot[np.arange(labels.shape[0]), labels] = 1
-        return onehot
+    if dataset_name == 'mnist':
+        dataset = fetch_openml('mnist_784', version=1, as_frame=False, parser="liac-arff")
+    elif dataset_name == 'fashion_mnist':
+        dataset = fetch_openml('Fashion-MNIST', version=1, as_frame=False, parser="liac-arff")
+    else:
+        raise ValueError("dataset must be 'mnist' or 'fashion_mnist'")
 
-    y_train = one_hot_encode(y_train)
-    y_test = one_hot_encode(y_test)
+    X = dataset.data.astype(np.float32)
+    y = dataset.target.astype(np.uint8)
+
+    # Standard MNIST split: 60k train / 10k test
+    X_train = X[:60000]
+    y_train = y[:60000]
+
+    X_test = X[60000:]
+    y_test = y[60000:]
+
+    # Normalize
+    X_train /= 255.0
+    X_test /= 255.0
+
+    # One-hot encode
+    def one_hot(labels):
+        out = np.zeros((labels.shape[0], 10))
+        out[np.arange(labels.shape[0]), labels] = 1
+        return out
+
+    y_train = one_hot(y_train)
+    y_test = one_hot(y_test)
+
+    np.savez_compressed(
+        cache_file,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test
+    )
+
     return X_train, y_train, X_test, y_test

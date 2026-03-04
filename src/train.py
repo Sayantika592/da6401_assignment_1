@@ -11,7 +11,6 @@ import numpy as np
 from ann.neural_layer import Linear
 from ann.neural_network import NeuralNetwork
 from utils.data_loader import load_data
-from sklearn.metrics import f1_score
 import wandb
 
 def parse_arguments():
@@ -43,36 +42,43 @@ def parse_arguments():
     parser.add_argument("-o", "--optimizer", required=True)
     parser.add_argument("-lr", "--learning_rate", type=float, required=True)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
+    parser.add_argument("-sz", "--hidden_sizes", type=str, required=True)
     parser.add_argument("-nhl", "--num_layers", type=int, required=True)
-    parser.add_argument("-sz", "--hidden_sizes", type=int, nargs="+", required=True)
     parser.add_argument("-a", "--activation", required=True)
     parser.add_argument("-w_i", "--weight_init", required=True)
     
     return parser.parse_args()
 
-def compute_f1_score(model, X, y):
-    """
-    Compute F1 score for model predictions.
-    
-    Args:
-        model: Trained neural network model
-        X: Input data
-        y: True labels (one-hot encoded)
-    Returns:
-        F1 score for the model's predictions
-    """
-    y_pred = model.forward(X)
-    y_pred_labels = np.argmax(y_pred, axis=1)
-    y_true_labels = np.argmax(y, axis=1)
-    return f1_score(y_true_labels, y_pred_labels, average='weighted')
-
 def main():
     args = parse_arguments()
 
-    np.random.seed(40)
+    # Convert hidden_sizes string to list of ints
+    if isinstance(args.hidden_sizes, str):
+        args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
 
     if args.wandb_project:
         wandb.init(project=args.wandb_project, config=vars(args))
+
+    # If running inside a W&B sweep, override CLI args with sweep config
+    if args.wandb_project and wandb.config:
+        sweep_cfg = wandb.config
+
+        args.learning_rate = sweep_cfg.learning_rate
+        args.batch_size = sweep_cfg.batch_size
+        args.optimizer = sweep_cfg.optimizer
+        args.activation = sweep_cfg.activation
+        args.weight_init = sweep_cfg.weight_init
+        args.loss = sweep_cfg.loss
+        args.hidden_sizes = list(map(int, sweep_cfg.hidden_sizes.split()))
+        args.num_layers = sweep_cfg.num_layers
+        args.dataset = sweep_cfg.dataset
+        args.epochs = sweep_cfg.epochs
+        args.model_path = sweep_cfg.model_path
+        args.weight_decay = sweep_cfg.weight_decay
+        args.wandb_project = sweep_cfg.wandb_project
+
+    if args.num_layers != len(args.hidden_sizes):
+        raise ValueError("num_layers must match length of hidden_sizes list")
 
     # path handling for model saving
     save_dir = args.model_path
@@ -102,9 +108,9 @@ def main():
 
     # training loop
     N = X_train.shape[0]
-
+    np.random.seed(40)
     for epoch in range(args.epochs):
-
+        
         perm = np.random.permutation(N)
         X_train = X_train[perm]
         y_train = y_train[perm]
@@ -151,12 +157,6 @@ def main():
                 elif args.activation == "tanh":
                     tanh_saturation = np.mean(np.abs(act) > 0.95)
 
-            # dead neuron ratio (ReLU only as asked in the question)
-            dead_ratio = None
-            if args.activation == "relu" and hasattr(model, "cached_activations"):
-                act = model.cached_activations[0]
-                dead_ratio = np.mean(act == 0)
-
             # W&B logging for batch metrics
             if args.wandb_project:
                 log_dict = {
@@ -170,28 +170,37 @@ def main():
                     log_dict["tanh_saturation_ratio"] = tanh_saturation
 
                 wandb.log(log_dict)
-                
+
             # update
             model.update_weights()
 
         epoch_loss /= num_batches
 
         # evaluate on test set
-        accuracy = model.evaluate(X_test, y_test)
-        f1 = compute_f1_score(model, X_test, y_test)
+        accuracy, f1 = model.evaluate(X_test, y_test)
+        val_logits = model.forward(X_test)
+        val_loss = model.loss.forward(y_test, val_logits)
 
-        print(f"Epoch {epoch+1}/{args.epochs}, Loss: {epoch_loss:.4f}, Acc: {accuracy:.4f}, F1: {f1:.4f}")
+        # convert to scalar if it’s a numpy array
+        if hasattr(val_loss, "item"):
+            val_loss = val_loss.item()
+
+        print(f"Epoch {epoch+1}/{args.epochs}, "
+              f"Train Loss: {epoch_loss:.4f}, "
+              f"Val Loss: {val_loss:.4f}, "
+              f"Acc: {accuracy:.4f}, F1: {f1:.4f}")
 
         # W&B epoch logging
         if args.wandb_project:
             wandb.log({
                 "epoch": epoch + 1,
                 "train_loss": epoch_loss,
+                "val_loss": val_loss,
                 "test_accuracy": accuracy,
                 "test_f1": f1
             })
 
-        # saving best model based on F1 score
+        # saving best model based on F1 score compared to previous best F1 score, if improved, save model weights and config with new best F1 score
         if f1 > best_f1:
             best_f1 = f1
 

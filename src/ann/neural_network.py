@@ -4,10 +4,11 @@ Handles forward and backward propagation loops
 """
 import numpy as np
 
-from ann.activations import ReLU, Sigmoid, Softmax, Tanh
+from ann.activations import ReLU, Sigmoid, Tanh
 from ann.neural_layer import Linear
 from ann.objective_functions import MSE, CrossEntropy
 from ann.optimizers import NAG, SGD, Adam, Momentum, Nadam, RMSProp
+from sklearn.metrics import f1_score
 
 
 class NeuralNetwork:
@@ -162,7 +163,8 @@ class NeuralNetwork:
         y_pred_labels = np.argmax(y_pred, axis=1)
         y_true_labels = np.argmax(y, axis=1)
         accuracy = np.mean(y_pred_labels == y_true_labels)
-        return accuracy
+        f1 = f1_score(y_true_labels, y_pred_labels, average="weighted")
+        return accuracy, f1
     
     def get_weights(self):
         d = {}

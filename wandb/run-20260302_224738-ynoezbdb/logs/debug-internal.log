@@ -1,0 +1,11 @@
+{"time":"2026-03-02T22:47:38.697046765+05:30","level":"INFO","msg":"stream: starting","core version":"0.25.0"}
+{"time":"2026-03-02T22:47:39.592317302+05:30","level":"INFO","msg":"stream: created new stream","id":"ynoezbdb"}
+{"time":"2026-03-02T22:47:39.592394542+05:30","level":"INFO","msg":"handler: started","stream_id":"ynoezbdb"}
+{"time":"2026-03-02T22:47:39.592485376+05:30","level":"INFO","msg":"stream: started","id":"ynoezbdb"}
+{"time":"2026-03-02T22:47:39.592542317+05:30","level":"INFO","msg":"writer: started","stream_id":"ynoezbdb"}
+{"time":"2026-03-02T22:47:39.59257664+05:30","level":"INFO","msg":"sender: started","stream_id":"ynoezbdb"}
+{"time":"2026-03-02T22:47:57.356075004+05:30","level":"INFO","msg":"stream: closing","id":"ynoezbdb"}
+{"time":"2026-03-02T22:48:04.25783479+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-02T22:48:05.191047965+05:30","level":"INFO","msg":"handler: closed","stream_id":"ynoezbdb"}
+{"time":"2026-03-02T22:48:05.191115169+05:30","level":"INFO","msg":"sender: closed","stream_id":"ynoezbdb"}
+{"time":"2026-03-02T22:48:05.191121675+05:30","level":"INFO","msg":"stream: closed","id":"ynoezbdb"}

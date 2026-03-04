@@ -1,12 +1,32 @@
+program: src/train.py
+
 method: bayes
+
 metric:
   name: test_f1
   goal: maximize
 
 parameters:
 
+  # REQUIRED FIXED ARGS
+  wandb_project:
+    value: da6401
+
+  model_path:
+    value: src
+
+  dataset:
+    value: mnist
+
+  epochs:
+    value: 5
+
+  weight_decay:
+    value: 0.0
+
+  # SWEEP ARGS
   learning_rate:
-    values: [0.0005, 0.001, 0.005, 0.01]
+    values: [0.0005, 0.001, 0.005]
 
   batch_size:
     values: [32, 64, 128]
@@ -20,47 +40,18 @@ parameters:
   weight_init:
     values: ["random", "xavier"]
 
+  loss:
+    value: "cross_entropy"
+
   num_layers:
-    values: [2, 3]
+    value: 2
 
   hidden_sizes:
     values:
+      - "64 64"
       - "128 64"
       - "256 128"
-      - "128 64 32"
-
-  loss:
-    values: ["cross_entropy"]   # keep CE for classification
 
 early_terminate:
   type: hyperband
   min_iter: 2
-
-command:
-  - ${env}
-  - python3
-  - src/train.py
-  - -w_p
-  - da6401
-  - -m
-  - src
-  - -d
-  - mnist
-  - -e
-  - 5
-  - -b
-  - ${batch_size}
-  - -l
-  - ${loss}
-  - -o
-  - ${optimizer}
-  - -lr
-  - ${learning_rate}
-  - -nhl
-  - ${num_layers}
-  - -sz
-  - ${hidden_sizes}
-  - -a
-  - ${activation}
-  - -w_i
-  - ${weight_init}

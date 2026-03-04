@@ -1,0 +1,9 @@
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_setup.py:_flush():81] Current SDK version is 0.25.0
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_setup.py:_flush():81] Configure stats pid to 167981
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /home/hp/da6401_assignment_1/wandb/run-20260303_013118-lnsex6mz/logs/debug.log
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /home/hp/da6401_assignment_1/wandb/run-20260303_013118-lnsex6mz/logs/debug-internal.log
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_init.py:init():844] calling init triggers
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_init.py:init():849] wandb.init called with sweep_config: {'activation': 'tanh', 'batch_size': 128, 'dataset': 'mnist', 'epochs': 5, 'hidden_sizes': '128 64', 'learning_rate': 0.005, 'loss': 'cross_entropy', 'model_path': 'src', 'num_layers': 2, 'optimizer': 'adam', 'wandb_project': 'da6401', 'weight_decay': 0, 'weight_init': 'xavier'}
+config: {'wandb_project': 'da6401', 'model_path': 'src', 'dataset': 'mnist', 'epochs': 5, 'batch_size': 128, 'loss': 'cross_entropy', 'optimizer': 'adam', 'learning_rate': 0.005, 'weight_decay': 0.0, 'hidden_sizes': [128, 64], 'num_layers': 2, 'activation': 'tanh', 'weight_init': 'xavier', '_wandb': {}}
+2026-03-03 01:31:18,842 INFO    MainThread:167981 [wandb_init.py:init():892] starting backend

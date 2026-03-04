@@ -1,0 +1,10 @@
+Loaded previous best F1: 0.9805
+Epoch 1/5, Loss: 0.2909, Acc: 0.9623, F1: 0.9623
+Epoch 2/5, Loss: 0.1034, Acc: 0.9706, F1: 0.9706
+Epoch 3/5, Loss: 0.0676, Acc: 0.9744, F1: 0.9744
+Epoch 4/5, Loss: 0.0498, Acc: 0.9757, F1: 0.9757
+Epoch 5/5, Loss: 0.0366, Acc: 0.9806, F1: 0.9806
+New best model saved with F1 Score: 0.9806
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+Training complete!

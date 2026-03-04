@@ -1,0 +1,1 @@
+{"test_f1":0.9701942496451164,"batch_loss":0.1844390308453396,"_runtime":32,"grad_norm_layer1":1.4061839057648398,"_step":9379,"dead_neuron_ratio":0.39599609375,"_wandb":{"runtime":32},"val_loss":0.09760162977250991,"_timestamp":1.7724721048893924e+09,"epoch":5,"train_loss":0.0833811442953043,"test_accuracy":0.9702}

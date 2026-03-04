@@ -1,0 +1,8 @@
+Loaded previous best F1: 0.9806
+Downloading mnist from OpenML...
+Epoch 1/5, Train Loss: 0.3636, Val Loss: 0.1541, Acc: 0.9548, F1: 0.9547
+Epoch 2/5, Train Loss: 0.1243, Val Loss: 0.1083, Acc: 0.9661, F1: 0.9661
+Epoch 3/5, Train Loss: 0.0837, Val Loss: 0.0956, Acc: 0.9698, F1: 0.9698
+Epoch 4/5, Train Loss: 0.0619, Val Loss: 0.0865, Acc: 0.9735, F1: 0.9735
+Epoch 5/5, Train Loss: 0.0464, Val Loss: 0.0831, Acc: 0.9763, F1: 0.9763
+Training complete!

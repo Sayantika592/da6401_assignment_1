@@ -1,0 +1,11 @@
+{"time":"2026-03-03T01:24:28.551741717+05:30","level":"INFO","msg":"stream: starting","core version":"0.25.0"}
+{"time":"2026-03-03T01:24:29.119137703+05:30","level":"INFO","msg":"stream: created new stream","id":"ejecayak"}
+{"time":"2026-03-03T01:24:29.119238862+05:30","level":"INFO","msg":"handler: started","stream_id":"ejecayak"}
+{"time":"2026-03-03T01:24:29.119262882+05:30","level":"INFO","msg":"stream: started","id":"ejecayak"}
+{"time":"2026-03-03T01:24:29.119263601+05:30","level":"INFO","msg":"writer: started","stream_id":"ejecayak"}
+{"time":"2026-03-03T01:24:29.119271903+05:30","level":"INFO","msg":"sender: started","stream_id":"ejecayak"}
+{"time":"2026-03-03T01:24:39.264033375+05:30","level":"INFO","msg":"stream: closing","id":"ejecayak"}
+{"time":"2026-03-03T01:24:40.178170122+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-03T01:24:41.304998123+05:30","level":"INFO","msg":"handler: closed","stream_id":"ejecayak"}
+{"time":"2026-03-03T01:24:41.30508126+05:30","level":"INFO","msg":"sender: closed","stream_id":"ejecayak"}
+{"time":"2026-03-03T01:24:41.305091332+05:30","level":"INFO","msg":"stream: closed","id":"ejecayak"}
