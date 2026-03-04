@@ -1,8 +1,0 @@
-Loaded previous best F1: 0.9814
-Loading mnist from local cache...
-Epoch 1/5, Train Loss: 0.2563, Val Loss: 0.1436, Acc: 0.9562, F1: 0.9562
-Epoch 2/5, Train Loss: 0.1233, Val Loss: 0.1131, Acc: 0.9658, F1: 0.9658
-Epoch 3/5, Train Loss: 0.0917, Val Loss: 0.1132, Acc: 0.9667, F1: 0.9667
-Epoch 4/5, Train Loss: 0.0766, Val Loss: 0.1190, Acc: 0.9645, F1: 0.9644
-Epoch 5/5, Train Loss: 0.0684, Val Loss: 0.0963, Acc: 0.9729, F1: 0.9729
-Training complete!

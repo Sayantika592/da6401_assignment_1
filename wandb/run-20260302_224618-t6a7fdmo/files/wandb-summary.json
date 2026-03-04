@@ -1,1 +1,0 @@
-{"grad_norm_layer1":0.5337644080690411,"_runtime":13,"train_loss":0.08639606298857434,"test_f1":0.9705858989108294,"_wandb":{"runtime":13},"val_loss":0.09480045392162001,"tanh_saturation_ratio":0.2975260416666667,"test_accuracy":0.9706,"_timestamp":1.7724717938447351e+09,"epoch":5,"_step":2349,"batch_loss":0.16946593057903894}
