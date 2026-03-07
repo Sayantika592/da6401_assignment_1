@@ -32,36 +32,43 @@ def parse_arguments():
     - model_save_path: Path to save trained model (do not give absolute path, rather provide relative path)
     """
     parser = argparse.ArgumentParser(description='Train a neural network')
-    
-    parser.add_argument("-w_p", "--wandb_project", default=None)
-    parser.add_argument("-m", "--model_path", default="models")
-    parser.add_argument("-d", "--dataset", required=True)
-    parser.add_argument("-e", "--epochs", type=int, required=True)
-    parser.add_argument("-b", "--batch_size", type=int, required=True)
-    parser.add_argument("-l", "--loss", required=True)
-    parser.add_argument("-o", "--optimizer", required=True)
-    parser.add_argument("-lr", "--learning_rate", type=float, required=True)
+
+    parser.add_argument("-w_p", "--wandb_project", default="da6401_assignment_1-1-src")
+    parser.add_argument("-m", "--model_path", default="src")
+
+    parser.add_argument("-d", "--dataset", default="mnist")
+    parser.add_argument("-e", "--epochs", type=int, default=15)
+    parser.add_argument("-b", "--batch_size", type=int, default=128)
+
+    parser.add_argument("-l", "--loss", default="cross_entropy")
+    parser.add_argument("-o", "--optimizer", default="nadam")
+
+    parser.add_argument("-lr", "--learning_rate", type=float, default=0.001)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
-    parser.add_argument("-sz", "--hidden_sizes", required=True)
-    parser.add_argument("-nhl", "--num_layers", type=int, required=True)
-    parser.add_argument("-a", "--activation", required=True)
-    parser.add_argument("-w_i", "--weight_init", required=True)
+
+    parser.add_argument("-sz", "--hidden_size", nargs="+", type=int, default=[128, 64])
+    parser.add_argument("-nhl", "--num_layers", type=int, default=2)
+
+    parser.add_argument("-a", "--activation", default="tanh")
+    parser.add_argument("-w_i", "--weight_init", default="xavier")
     
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
 
-    # Convert hidden_sizes argument into a list of integers regardless of how it was passed
-    if isinstance(args.hidden_sizes, str):
-        args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
-    elif isinstance(args.hidden_sizes, list):
-        args.hidden_sizes = [int(x) for x in args.hidden_sizes]
-    else:
-        args.hidden_sizes = [int(args.hidden_sizes)]
+    args.hidden_sizes = args.hidden_size
 
-    if args.wandb_project:
-        wandb.init(project=args.wandb_project, config=vars(args))
+    # Convert hidden_sizes argument into a list of integers regardless of how it was passed
+    #if isinstance(args.hidden_sizes, str):
+    #    args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
+    #elif isinstance(args.hidden_sizes, list):
+    #    args.hidden_sizes = [int(x) for x in args.hidden_sizes]
+    #else:
+    #    args.hidden_sizes = [int(args.hidden_sizes)]
+
+    # if args.wandb_project:
+    #     wandb.init(project=args.wandb_project, config=vars(args))
 
     # If running inside a W&B sweep, override CLI args with sweep config
     if args.wandb_project and wandb.run and wandb.run.sweep_id:
@@ -73,7 +80,7 @@ def main():
         args.activation = sweep_cfg.activation
         args.weight_init = sweep_cfg.weight_init
         args.loss = sweep_cfg.loss
-        args.hidden_sizes = list(map(int, sweep_cfg.hidden_sizes.split()))
+        args.hidden_sizes = args.hidden_size
         args.num_layers = sweep_cfg.num_layers
         args.dataset = sweep_cfg.dataset
         args.epochs = sweep_cfg.epochs
@@ -90,6 +97,7 @@ def main():
         save_dir = os.path.dirname(save_dir) or "."
     os.makedirs(save_dir, exist_ok=True)
 
+    
     config_path = os.path.join(save_dir, "best_config.json")
     model_path = os.path.join(save_dir, "best_model.npy")
 
@@ -138,49 +146,6 @@ def main():
             # backward
             model.backward(y_batch, logits)
 
-            # gradient norm (first layer)
-            first_linear = None
-            for layer in model.layers:
-                if isinstance(layer, Linear):
-                    first_linear = layer
-                    break
-
-            grad_norm = np.linalg.norm(first_linear.grad_W)
-
-            # dead neuron ratio (ReLU) or saturation ratio (Tanh) for activation analysis
-
-            dead_ratio = None
-            tanh_saturation = None
-
-            if hasattr(model, "cached_activations") and len(model.cached_activations) > 0:
-                act = model.cached_activations[0]  # first hidden layer
-
-                if args.activation == "relu":
-                    dead_ratio = np.mean(act == 0)
-
-                elif args.activation == "tanh":
-                    tanh_saturation = np.mean(np.abs(act) > 0.95)
-
-            # W&B logging for batch metrics
-            if args.wandb_project:
-                log_dict = {
-                    "batch_loss": loss,
-                    "grad_norm_layer1": grad_norm
-                }
-                
-                # Add per-neuron gradients for the first 5 neurons (for Q2.9)
-                if first_linear is not None and first_linear.grad_W.shape[1] >= 5:
-                    for n_idx in range(5):
-                        log_dict[f"grad_neuron_{n_idx}"] = np.linalg.norm(first_linear.grad_W[:, n_idx])
-
-                if dead_ratio is not None:
-                    log_dict["dead_neuron_ratio"] = dead_ratio
-
-                if tanh_saturation is not None:
-                    log_dict["tanh_saturation_ratio"] = tanh_saturation
-
-                wandb.log(log_dict)
-
             # update
             model.update_weights()
 
@@ -205,16 +170,16 @@ def main():
               f"Val Acc: {accuracy:.4f}, Val F1: {f1:.4f}")
 
         # W&B epoch logging
-        if args.wandb_project:
-            wandb.log({
-                "epoch": epoch + 1,
-                "train_loss": epoch_loss,
-                "train_accuracy": train_accuracy,
-                "train_f1": train_f1,
-                "val_loss": val_loss,
-                "test_accuracy": accuracy,
-                "test_f1": f1
-            })
+        # if args.wandb_project:
+        #     wandb.log({
+        #         "epoch": epoch + 1,
+        #         "train_loss": epoch_loss,
+        #         "train_accuracy": train_accuracy,
+        #         "train_f1": train_f1,
+        #         "val_loss": val_loss,
+        #         "test_accuracy": accuracy,
+        #         "test_f1": f1
+        #     })
 
         # saving best model based on F1 score compared to previous best F1 score, if improved, save model weights and config with new best F1 score
         if f1 > best_f1:
@@ -231,45 +196,14 @@ def main():
 
             print(f"New best model saved with F1 Score: {best_f1:.4f}")
 
-            if args.wandb_project:
-                wandb.save(model_path)
-                wandb.save(config_path)
+            # if args.wandb_project:
+            #     wandb.save(model_path)
+            #     wandb.save(config_path)
+
+    # if args.wandb_project:
+    #     wandb.finish()
 
     print("Training complete!")
-
-    # Confusion Matrix (Q2.8)
-
-    logits = model.forward(X_test)
-    preds = np.argmax(logits, axis=1)
-    true = np.argmax(y_test, axis=1)
-
-    if args.wandb_project:
-
-        wandb.log({
-            "confusion_matrix": wandb.plot.confusion_matrix(
-                y_true=true,
-                preds=preds,
-                class_names=[str(i) for i in range(10)]
-            )
-        })
-
-    # Visualization
-
-    errors = np.where(preds != true)[0]
-
-    error_images = []
-
-    for i in errors[:20]:
-
-        error_images.append(
-            wandb.Image(
-                X_test[i].reshape(28, 28),
-                caption=f"True:{true[i]} Pred:{preds[i]}"
-            )
-        )
-
-    if args.wandb_project:
-        wandb.log({"misclassified_examples": error_images})
 
 if __name__ == '__main__':
     main()

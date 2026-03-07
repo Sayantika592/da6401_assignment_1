@@ -25,19 +25,24 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description='Run inference on test set')
 
-    parser.add_argument("-w_p", "--wandb_project", default=None)
-    parser.add_argument("-m", "--model_path", default="models")
-    parser.add_argument("-d", "--dataset", required=True)
-    parser.add_argument("-e", "--epochs", type=int, required=True)
-    parser.add_argument("-b", "--batch_size", type=int, required=True)
-    parser.add_argument("-l", "--loss", required=True)
-    parser.add_argument("-o", "--optimizer", required=True)
-    parser.add_argument("-lr", "--learning_rate", type=float, required=True)
+    parser.add_argument("-w_p", "--wandb_project", default="da6401_assignment_1-1-src")
+    parser.add_argument("-m", "--model_path", default="src")
+
+    parser.add_argument("-d", "--dataset", default="mnist")
+    parser.add_argument("-e", "--epochs", type=int, default=15)
+    parser.add_argument("-b", "--batch_size", type=int, default=128)
+
+    parser.add_argument("-l", "--loss", default="cross_entropy")
+    parser.add_argument("-o", "--optimizer", default="nadam")
+
+    parser.add_argument("-lr", "--learning_rate", type=float, default=0.001)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
-    parser.add_argument("-nhl", "--num_layers", type=int, required=True)
-    parser.add_argument("-sz", "--hidden_sizes", required=True)
-    parser.add_argument("-a", "--activation", required=True)
-    parser.add_argument("-w_i", "--weight_init", required=True)
+
+    parser.add_argument("-sz", "--hidden_size", nargs="+", type=int, default=[128, 64])
+    parser.add_argument("-nhl", "--num_layers", type=int, default=2)
+
+    parser.add_argument("-a", "--activation", default="tanh")
+    parser.add_argument("-w_i", "--weight_init", default="xavier")
     
     return parser.parse_args()
 
@@ -99,15 +104,24 @@ def main():
     """
     args = parse_arguments()
 
-    # Convert hidden_sizes argument into a list of integers regardless of how it was passed
-    if isinstance(args.hidden_sizes, str):
-        args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
-    elif isinstance(args.hidden_sizes, list):
-        args.hidden_sizes = [int(x) for x in args.hidden_sizes]
-    else:
-        args.hidden_sizes = [int(args.hidden_sizes)]
+    # Load architecture from best_config.json if it exists
+    import os, json
+    config_path = args.model_path.replace("best_model.npy", "best_config.json")
+    if not os.path.exists(config_path):
+        save_dir = os.path.dirname(args.model_path) or "."
+        config_path = os.path.join(save_dir, "best_config.json")
 
-    _, _, X_test, y_test = load_data(args.dataset) # load test data
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            config = json.load(f)
+            args.hidden_size = config.get("hidden_size", args.hidden_size)
+            args.num_layers = config.get("num_layers", args.num_layers)
+            args.activation = config.get("activation", args.activation)
+            args.loss = config.get("loss", args.loss)
+
+    args.hidden_sizes = args.hidden_size
+
+    _, _, X_test, y_test = load_data(args.dataset)
 
     args.input_size = X_test.shape[1] # set input size based on test data features
     args.output_size = y_test.shape[1] # set output size based on test data labels

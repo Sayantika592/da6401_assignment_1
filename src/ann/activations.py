@@ -30,14 +30,14 @@ class ReLU:
     def backward(self, dA):
         return dA * self.mask
 
-class Softmax:
+class Softmax:  # softmax is used for multi-class classification
     def forward(self, Z):
         Z_shift = Z - np.max(Z, axis=1, keepdims=True)
         expZ = np.exp(Z_shift)
         self.out = expZ / np.sum(expZ, axis=1, keepdims=True)
         return self.out
     
-    def backward(self, dA):
+    def backward(self, dA): # dA is the upstream gradient, here jacobian is calculated and multiplied with dA so that the gradient is backpropagated to the previous layer
         batch_size, num_classes = self.out.shape
         dZ = np.zeros_like(self.out)
 

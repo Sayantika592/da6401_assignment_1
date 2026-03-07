@@ -23,8 +23,14 @@ class Linear:
         return np.dot(X, self.W) + self.b
     
     def backward(self, dZ):
-        # batch_size = self.X.shape[0]
-        self.grad_W = np.dot(self.X.T, dZ) #/batch_size
-        self.grad_b = np.sum(dZ, axis=0, keepdims=True) #/batch_size
-        dX = np.dot(dZ, self.W.T)
-        return dX
+
+        N = self.X.shape[0]
+
+        # gradients
+        self.grad_W = (self.X.T @ dZ)
+        self.grad_b = np.sum(dZ, axis=0, keepdims=True)
+
+        # propagate gradient using chain rule
+        dA_prev = dZ @ self.W.T
+
+        return dA_prev

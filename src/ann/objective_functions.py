@@ -37,13 +37,17 @@ class CrossEntropy:
         expZ = np.exp(logits - np.max(logits, axis=1, keepdims=True))
         self.probs = expZ / np.sum(expZ, axis=1, keepdims=True)
 
-        loss = -np.sum(y_true * np.log(self.probs + 1e-15)) / self.N
-        return loss
+        loss = -np.sum(y_true * np.log(self.probs + 1e-15), axis=1)
+
+        return np.mean(loss)
+
         
     def backward(self):
         """
         Gradient of Cross-Entropy Loss w.r.t. predictions (combining softmax and CE)
         dL/dy_pred = (probs - y_true) / N
         """
+        N = self.y_true.shape[0]
+
         dL_dy_pred = (self.probs - self.y_true)/self.N
         return dL_dy_pred

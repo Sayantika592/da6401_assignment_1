@@ -28,7 +28,13 @@ class NeuralNetwork:
         self.activations = []
         input_size = getattr(cli_args, "input_size", 784)
         output_size = getattr(cli_args, "output_size", 10)
-        sizes = [input_size] + cli_args.hidden_sizes + [output_size]
+        if hasattr(cli_args, "hidden_sizes"):
+            hidden_sizes = cli_args.hidden_sizes
+        elif hasattr(cli_args, "hidden_size"):
+            hidden_sizes = cli_args.hidden_size
+        else:
+            hidden_sizes = [128] * getattr(cli_args, "num_layers", 1)
+        sizes = [input_size] + hidden_sizes + [output_size]
         
         for i in range(len(sizes) - 1):
             self.layers.append(Linear(sizes[i], sizes[i+1], weight_init=cli_args.weight_init))
@@ -90,33 +96,49 @@ class NeuralNetwork:
     def backward(self, y_true, y_pred):
         """
         Backward propagation to compute gradients.
-        
-        Args:
-            y_true: True labels
-            y_pred: Predicted outputs
-            
-        Returns:
-            return grad_w, grad_b in layers (index 0 = first layer)
         """
-        self.loss.forward(y_true, y_pred)
-        dZ = self.loss.backward()
+        output_size = getattr(self.cli_args, "output_size", 10)
+        y_true = np.array(y_true)
+
+        # Force y_true to (N, output_size) row-major one-hot: thus is done to handle the case when y_true is given as a vector of labels. what it does is: if y_true is a scalar, it is converted to a one-hot vector of size output_size. if y_true is a vector of size output_size, it is converted to a one-hot vector of size output_size. if y_true is a vector of size N, it is converted to a one-hot vector of size N x output_size.
+        if y_true.ndim == 0:
+            oh = np.zeros((1, output_size))
+            oh[0, int(y_true)] = 1.0
+            y_true = oh
+        elif y_true.ndim == 1:
+            if y_true.shape[0] == output_size and np.all((y_true == 0) | (y_true == 1)):
+                y_true = y_true.reshape(1, output_size)
+            else:
+                N_y = y_true.shape[0]
+                oh = np.zeros((N_y, output_size))
+                oh[np.arange(N_y), y_true.astype(int)] = 1.0
+                y_true = oh
+        elif y_true.ndim == 2:
+            if y_true.shape[1] != output_size and y_true.shape[0] == output_size:
+                y_true = y_true.T
+        
+        y_pred = np.array(y_pred)
+        if y_pred.ndim == 2 and y_pred.shape[1] != output_size and y_pred.shape[0] == output_size:
+            y_pred = y_pred.T
+
+        _ = self.loss.forward(y_true, y_pred) # compute loss
+        dZ = self.loss.backward() # compute gradient of loss w.r.t. output of last layer
 
         grad_W_list = []
         grad_b_list = []
 
         for i in reversed(range(len(self.layers))):
-            if i < len(self.activations):
-                dZ = self.activations[i].backward(dZ)
 
             layer = self.layers[i]
             dZ = layer.backward(dZ)
 
-            # Store gradients for Linear layers
+            if i > 0:
+                dZ = self.activations[i-1].backward(dZ)
+
             grad_W_list.append(layer.grad_W)
             grad_b_list.append(layer.grad_b)
 
-        # Reverse so grad_W[0] corresponds to self.layers[0]
-        grad_W_list.reverse()
+        grad_W_list.reverse() # reverse the list of gradients to get the gradients in the correct order
         grad_b_list.reverse()
 
         # Convert to object arrays

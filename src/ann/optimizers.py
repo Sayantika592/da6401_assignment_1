@@ -69,7 +69,7 @@ class NAG:
         layer.b -= (self.gamma * self.vb[key] + self.lr * gb)
 
 
-class RMSProp:
+class RMSProp: # RMSProp is an optimization algorithm that is used to update the weights of a neural network. It is a variation of the SGD algorithm that uses a moving average of the squared gradients to update the weights.
     def __init__(self, learning_rate, gamma=0.9, eps=1e-8, weight_decay = 0.0):
         self.lr = learning_rate
         self.gamma = gamma
@@ -88,7 +88,7 @@ class RMSProp:
         gW = layer.grad_W + self.wd * layer.W
         gb = layer.grad_b
 
-        self.vW[key] = self.gamma * self.vW[key] + (1 - self.gamma) * (gW ** 2)
+        self.vW[key] = self.gamma * self.vW[key] + (1 - self.gamma) * (gW ** 2) # it uses the moving average of the squared gradients to update the weights
         self.vb[key] = self.gamma * self.vb[key] + (1 - self.gamma) * (gb ** 2)
 
         layer.W -= self.lr * gW / (np.sqrt(self.vW[key]) + self.eps)
@@ -184,10 +184,10 @@ class Nadam:
         vW_hat = self.vW[key] / (1 - self.gamma2 ** self.t)
         vb_hat = self.vb[key] / (1 - self.gamma2 ** self.t)
 
-        # Nesterov term (using the mathematically correct formulation for Nadam)
+        # Nesterov term
         mW_nesterov = self.gamma1 * mW_hat + (1 - self.gamma1) * gW / (1 - self.gamma1 ** self.t)
         mb_nesterov = self.gamma1 * mb_hat + (1 - self.gamma1) * gb / (1 - self.gamma1 ** self.t)
 
         # Update
-        layer.W -= self.lr * (mW_nesterov / (np.sqrt(vW_hat) + self.eps))
-        layer.b -= self.lr * (mb_nesterov / (np.sqrt(vb_hat) + self.eps))
+        layer.W -= self.lr * mW_nesterov / (np.sqrt(vW_hat) + self.eps)
+        layer.b -= self.lr * mb_nesterov / (np.sqrt(vb_hat) + self.eps)
