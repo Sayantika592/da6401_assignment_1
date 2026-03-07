@@ -88,7 +88,7 @@ da6401_assignment_1-1
 
 All experiments and visualizations are available here:
 
-W&B Report:  https://wandb.ai/me22b190-indian-institute-of-technology-madras/da6401_assignment_1-1-src/reports/DA6401-Assignment-1-Report--VmlldzoxNjEyNDg5Mw?accessToken=gbc6eqkuso1iotd882fib02qp64s0zx96mcsycf3i8hlpryt0701zy8ma84lyqcc
+W&B Report:  https://api.wandb.ai/links/me22b190-indian-institute-of-technology-madras/rbppran9
 
 ## GitHub Repository
 
