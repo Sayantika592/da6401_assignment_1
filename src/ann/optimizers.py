@@ -107,6 +107,10 @@ class Adam:
         self.vb = {}
         self.t = 0
 
+    def step(self):
+        """Call once per batch, before update() calls."""
+        self.t += 1
+
     def update(self, layer):
         key = id(layer)
 
@@ -118,8 +122,6 @@ class Adam:
 
         gW = layer.grad_W + self.wd * layer.W
         gb = layer.grad_b
-
-        self.t += 1
 
         # Update moments
         self.mW[key] = self.gamma1 * self.mW[key] + (1 - self.gamma1) * gW
@@ -152,6 +154,10 @@ class Nadam:
         self.vb = {}
         self.t = 0
 
+    def step(self):
+        """Call once per batch, before update() calls."""
+        self.t += 1
+
     def update(self, layer):
         key = id(layer)
 
@@ -160,8 +166,6 @@ class Nadam:
             self.vW[key] = np.zeros_like(layer.W)
             self.mb[key] = np.zeros_like(layer.b)
             self.vb[key] = np.zeros_like(layer.b)
-
-        self.t += 1
 
         gW = layer.grad_W + self.wd * layer.W
         gb = layer.grad_b
@@ -180,10 +184,10 @@ class Nadam:
         vW_hat = self.vW[key] / (1 - self.gamma2 ** self.t)
         vb_hat = self.vb[key] / (1 - self.gamma2 ** self.t)
 
-        # Nesterov term
+        # Nesterov term (using the mathematically correct formulation for Nadam)
         mW_nesterov = self.gamma1 * mW_hat + (1 - self.gamma1) * gW / (1 - self.gamma1 ** self.t)
         mb_nesterov = self.gamma1 * mb_hat + (1 - self.gamma1) * gb / (1 - self.gamma1 ** self.t)
 
         # Update
-        layer.W -= self.lr * mW_nesterov / (np.sqrt(vW_hat) + self.eps)
-        layer.b -= self.lr * mb_nesterov / (np.sqrt(vb_hat) + self.eps)
+        layer.W -= self.lr * (mW_nesterov / (np.sqrt(vW_hat) + self.eps))
+        layer.b -= self.lr * (mb_nesterov / (np.sqrt(vb_hat) + self.eps))

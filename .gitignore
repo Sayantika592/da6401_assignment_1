@@ -9,6 +9,12 @@
 !src/
 !src/**
 
+!models/
+!models/**
+
+!notebooks/
+!notebooks/**
+
 #################################
 # Allow git metadata files
 #################################
@@ -32,12 +38,6 @@ venv/
 .envrc
 
 #################################
-# Jupyter notebooks
-#################################
-*.ipynb
-.ipynb_checkpoints/
-
-#################################
 # VSCode / IDE
 #################################
 .vscode/
@@ -59,8 +59,9 @@ wandb/
 #################################
 # Config files generated during training
 #################################
-best_config.json
-best_model.npy
+!best_config.json
+!best_model.npy
+log_samples.py
 
 #################################
 # Dataset caches

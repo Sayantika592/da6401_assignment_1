@@ -35,7 +35,7 @@ def parse_arguments():
     parser.add_argument("-lr", "--learning_rate", type=float, required=True)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
     parser.add_argument("-nhl", "--num_layers", type=int, required=True)
-    parser.add_argument("-sz", "--hidden_sizes", type=int, nargs="+", required=True)
+    parser.add_argument("-sz", "--hidden_sizes", required=True)
     parser.add_argument("-a", "--activation", required=True)
     parser.add_argument("-w_i", "--weight_init", required=True)
     
@@ -98,6 +98,14 @@ def main():
     TODO: Must return Dictionary - logits, loss, accuracy, f1, precision, recall
     """
     args = parse_arguments()
+
+    # Convert hidden_sizes argument into a list of integers regardless of how it was passed
+    if isinstance(args.hidden_sizes, str):
+        args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
+    elif isinstance(args.hidden_sizes, list):
+        args.hidden_sizes = [int(x) for x in args.hidden_sizes]
+    else:
+        args.hidden_sizes = [int(args.hidden_sizes)]
 
     _, _, X_test, y_test = load_data(args.dataset) # load test data
 

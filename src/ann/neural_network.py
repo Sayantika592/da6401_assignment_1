@@ -50,7 +50,7 @@ class NeuralNetwork:
         else:
             raise ValueError(f"Unsupported loss function: {cli_args.loss}")
         
-        # few parametera of optimizers which are not mentioned in the CLI arguments are hardcoded as default values
+        # few parameters of optimizers which are not mentioned in the CLI arguments are hardcoded as default values
 
         if cli_args.optimizer == 'sgd':
             self.optimizer = SGD(cli_args.learning_rate, cli_args.weight_decay)
@@ -94,7 +94,7 @@ class NeuralNetwork:
             y_pred: Predicted outputs
             
         Returns:
-            return grad_w, grad_b in layers
+            return grad_w, grad_b in layers (index 0 = first layer)
         """
         self.loss.forward(y_true, y_pred)
         dZ = self.loss.backward()
@@ -103,9 +103,6 @@ class NeuralNetwork:
         grad_b_list = []
 
         for i in reversed(range(len(self.layers))):
-            #if isinstance(layer, Softmax) and isinstance(self.loss, CrossEntropy):
-                #continue
-
             if i < len(self.activations):
                 dZ = self.activations[i].backward(dZ)
 
@@ -114,7 +111,11 @@ class NeuralNetwork:
 
             # Store gradients for Linear layers
             grad_W_list.append(layer.grad_W)
-            grad_b_list.append(layer.grad_b)    
+            grad_b_list.append(layer.grad_b)
+
+        # Reverse so grad_W[0] corresponds to self.layers[0]
+        grad_W_list.reverse()
+        grad_b_list.reverse()
 
         # Convert to object arrays
         self.grad_W = np.empty(len(grad_W_list), dtype=object)
@@ -124,17 +125,16 @@ class NeuralNetwork:
             self.grad_W[i] = gw
             self.grad_b[i] = gb
 
-        #print("Shape of grad_Ws:", self.grad_W.shape, self.grad_W[1].shape)
-        #print("Shape of grad_bs:", self.grad_b.shape, self.grad_b[1].shape)
-
         return self.grad_W, self.grad_b
     
     def update_weights(self):
         """
         Update weights using the optimizer.
         """
+        # Increment timestep once per batch (for Adam/Nadam)
+        if hasattr(self.optimizer, 'step'):
+            self.optimizer.step()
         for layer in self.layers:
-            #if isinstance(layer, Linear):
             self.optimizer.update(layer)
     
     def train(self, X_train, y_train, epochs, batch_size):

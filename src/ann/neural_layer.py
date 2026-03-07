@@ -12,6 +12,9 @@ class Linear:
         elif weight_init == "xavier":                # Xavier initialization
             limit = np.sqrt(1 / in_features)
             self.W = np.random.uniform(-limit, limit, (in_features, out_features))
+
+        elif weight_init == "zeros":                 # Zeros initialization (for symmetry analysis)
+            self.W = np.zeros((in_features, out_features))
             
         self.b = np.zeros((1, out_features))
 

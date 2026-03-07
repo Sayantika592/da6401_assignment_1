@@ -7,6 +7,7 @@ import numpy as np
 
 class Sigmoid:
     def forward(self, X):
+        X = np.clip(X, -500, 500)
         self.out = 1/(1+np.exp(-X))
         return self.out
     

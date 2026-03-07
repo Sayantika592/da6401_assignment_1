@@ -42,7 +42,7 @@ def parse_arguments():
     parser.add_argument("-o", "--optimizer", required=True)
     parser.add_argument("-lr", "--learning_rate", type=float, required=True)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
-    parser.add_argument("-sz", "--hidden_sizes", type=str, required=True)
+    parser.add_argument("-sz", "--hidden_sizes", required=True)
     parser.add_argument("-nhl", "--num_layers", type=int, required=True)
     parser.add_argument("-a", "--activation", required=True)
     parser.add_argument("-w_i", "--weight_init", required=True)
@@ -52,15 +52,19 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    # Convert hidden_sizes string to list of ints
+    # Convert hidden_sizes argument into a list of integers regardless of how it was passed
     if isinstance(args.hidden_sizes, str):
         args.hidden_sizes = list(map(int, args.hidden_sizes.split()))
+    elif isinstance(args.hidden_sizes, list):
+        args.hidden_sizes = [int(x) for x in args.hidden_sizes]
+    else:
+        args.hidden_sizes = [int(args.hidden_sizes)]
 
     if args.wandb_project:
         wandb.init(project=args.wandb_project, config=vars(args))
 
     # If running inside a W&B sweep, override CLI args with sweep config
-    if args.wandb_project and wandb.config:
+    if args.wandb_project and wandb.run and wandb.run.sweep_id:
         sweep_cfg = wandb.config
 
         args.learning_rate = sweep_cfg.learning_rate
@@ -163,6 +167,12 @@ def main():
                     "batch_loss": loss,
                     "grad_norm_layer1": grad_norm
                 }
+                
+                # Add per-neuron gradients for the first 5 neurons (for Q2.9)
+                if first_linear is not None and first_linear.grad_W.shape[1] >= 5:
+                    for n_idx in range(5):
+                        log_dict[f"grad_neuron_{n_idx}"] = np.linalg.norm(first_linear.grad_W[:, n_idx])
+
                 if dead_ratio is not None:
                     log_dict["dead_neuron_ratio"] = dead_ratio
 
@@ -176,6 +186,9 @@ def main():
 
         epoch_loss /= num_batches
 
+        # evaluate on train set
+        train_accuracy, train_f1 = model.evaluate(X_train, y_train)
+
         # evaluate on test set
         accuracy, f1 = model.evaluate(X_test, y_test)
         val_logits = model.forward(X_test)
@@ -188,13 +201,16 @@ def main():
         print(f"Epoch {epoch+1}/{args.epochs}, "
               f"Train Loss: {epoch_loss:.4f}, "
               f"Val Loss: {val_loss:.4f}, "
-              f"Acc: {accuracy:.4f}, F1: {f1:.4f}")
+              f"Train Acc: {train_accuracy:.4f}, "
+              f"Val Acc: {accuracy:.4f}, Val F1: {f1:.4f}")
 
         # W&B epoch logging
         if args.wandb_project:
             wandb.log({
                 "epoch": epoch + 1,
                 "train_loss": epoch_loss,
+                "train_accuracy": train_accuracy,
+                "train_f1": train_f1,
                 "val_loss": val_loss,
                 "test_accuracy": accuracy,
                 "test_f1": f1
@@ -220,6 +236,40 @@ def main():
                 wandb.save(config_path)
 
     print("Training complete!")
+
+    # Confusion Matrix (Q2.8)
+
+    logits = model.forward(X_test)
+    preds = np.argmax(logits, axis=1)
+    true = np.argmax(y_test, axis=1)
+
+    if args.wandb_project:
+
+        wandb.log({
+            "confusion_matrix": wandb.plot.confusion_matrix(
+                y_true=true,
+                preds=preds,
+                class_names=[str(i) for i in range(10)]
+            )
+        })
+
+    # Visualization
+
+    errors = np.where(preds != true)[0]
+
+    error_images = []
+
+    for i in errors[:20]:
+
+        error_images.append(
+            wandb.Image(
+                X_test[i].reshape(28, 28),
+                caption=f"True:{true[i]} Pred:{preds[i]}"
+            )
+        )
+
+    if args.wandb_project:
+        wandb.log({"misclassified_examples": error_images})
 
 if __name__ == '__main__':
     main()

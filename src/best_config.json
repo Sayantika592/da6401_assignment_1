@@ -1,0 +1,1 @@
+{"wandb_project": "da6401_assignment_1-1-src", "model_path": "src", "dataset": "mnist", "epochs": 15, "batch_size": 128, "loss": "cross_entropy", "optimizer": "nadam", "learning_rate": 0.001, "weight_decay": 0.0, "hidden_sizes": [128, 64], "num_layers": 2, "activation": "tanh", "weight_init": "xavier", "input_size": 784, "output_size": 10, "best_f1": 0.9798994921935519}

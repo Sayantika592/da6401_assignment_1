@@ -42,8 +42,8 @@ class CrossEntropy:
         
     def backward(self):
         """
-        Gradient of Cross-Entropy Loss w.r.t. predictions
-        dL/dy_pred = - (y_true / y_pred) / n
+        Gradient of Cross-Entropy Loss w.r.t. predictions (combining softmax and CE)
+        dL/dy_pred = (probs - y_true) / N
         """
         dL_dy_pred = (self.probs - self.y_true)/self.N
         return dL_dy_pred

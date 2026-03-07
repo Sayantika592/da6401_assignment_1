@@ -1,8 +1,37 @@
-from sklearn.datasets import fetch_openml
 import numpy as np
 import os
+import gzip
+import urllib.request
+
+
+def download(url, filename):
+    if not os.path.exists(filename):
+        print(f"Downloading {filename}...")
+        urllib.request.urlretrieve(url, filename)
+
+
+def load_mnist_images(filename):
+    with gzip.open(filename, 'rb') as f:
+        f.read(16)
+        data = np.frombuffer(f.read(), dtype=np.uint8)
+    return data.reshape(-1, 28*28).astype(np.float32) / 255.0
+
+
+def load_mnist_labels(filename):
+    with gzip.open(filename, 'rb') as f:
+        f.read(8)
+        labels = np.frombuffer(f.read(), dtype=np.uint8)
+    return labels
+
+
+def one_hot(labels):
+    out = np.zeros((labels.shape[0], 10))
+    out[np.arange(labels.shape[0]), labels] = 1
+    return out
+
 
 def load_data(dataset_name):
+
     cache_file = f"src/{dataset_name}_cache.npz"
 
     if os.path.exists(cache_file):
@@ -10,34 +39,41 @@ def load_data(dataset_name):
         data = np.load(cache_file)
         return data['X_train'], data['y_train'], data['X_test'], data['y_test']
 
-    print(f"Downloading {dataset_name} from OpenML...") # Data is downloaded using openml in order to avoid using TensorFlow in the backend which is required by keras datasets.
+    if dataset_name == "fashion_mnist":
 
-    if dataset_name == 'mnist':
-        dataset = fetch_openml('mnist_784', version=1, as_frame=False, parser="liac-arff")
-    elif dataset_name == 'fashion_mnist':
-        dataset = fetch_openml('Fashion-MNIST', version=1, as_frame=False, parser="liac-arff")
+        base_url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
+
+        files = {
+            "train_images": "train-images-idx3-ubyte.gz",
+            "train_labels": "train-labels-idx1-ubyte.gz",
+            "test_images": "t10k-images-idx3-ubyte.gz",
+            "test_labels": "t10k-labels-idx1-ubyte.gz"
+        }
+
+    elif dataset_name == "mnist":
+
+        base_url = "http://yann.lecun.com/exdb/mnist/"
+
+        files = {
+            "train_images": "train-images-idx3-ubyte.gz",
+            "train_labels": "train-labels-idx1-ubyte.gz",
+            "test_images": "t10k-images-idx3-ubyte.gz",
+            "test_labels": "t10k-labels-idx1-ubyte.gz"
+        }
+
     else:
         raise ValueError("dataset must be 'mnist' or 'fashion_mnist'")
 
-    X = dataset.data.astype(np.float32)
-    y = dataset.target.astype(np.uint8)
+    os.makedirs("data", exist_ok=True)
 
-    # Standard MNIST split: 60k train / 10k test
-    X_train = X[:60000]
-    y_train = y[:60000]
+    for file in files.values():
+        download(base_url + file, f"data/{file}")
 
-    X_test = X[60000:]
-    y_test = y[60000:]
+    X_train = load_mnist_images(f"data/{files['train_images']}")
+    y_train = load_mnist_labels(f"data/{files['train_labels']}")
 
-    # Normalize
-    X_train /= 255.0
-    X_test /= 255.0
-
-    # One-hot encode
-    def one_hot(labels):
-        out = np.zeros((labels.shape[0], 10))
-        out[np.arange(labels.shape[0]), labels] = 1
-        return out
+    X_test = load_mnist_images(f"data/{files['test_images']}")
+    y_test = load_mnist_labels(f"data/{files['test_labels']}")
 
     y_train = one_hot(y_train)
     y_test = one_hot(y_test)
