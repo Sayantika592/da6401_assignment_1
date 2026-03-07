@@ -2,8 +2,6 @@
 
 This repository contains an implementation of a **Multi-Layer Perceptron (MLP)** built completely from scratch using **NumPy**.
 
-The project was developed as part of **DA6401: Introduction to Deep Learning (IIT Madras)**.
-
 ---
 
 ## Features
