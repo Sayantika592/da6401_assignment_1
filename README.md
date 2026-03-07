@@ -55,14 +55,34 @@ The following analyses were performed:
 ---
 
 ## Repository Structure
-models/ Saved model weights
-notebooks/ W&B visualization notebook
-src/
-├── ann/ Neural network implementation
-├── utils/ Data loading utilities
-├── train.py Training script
-└── inference.py
 
+```
+da6401_assignment_1-1
+│
+├── models/                # Saved trained models
+│   └── best_model.npy
+│
+├── notebooks/             # W&B visualization notebook
+│   └── wandb_demo.ipynb
+│
+├── src/
+│   ├── ann/               # Neural network implementation
+│   │   ├── activations.py
+│   │   ├── neural_layer.py
+│   │   ├── neural_network.py
+│   │   ├── objective_functions.py
+│   │   └── optimizers.py
+│   │
+│   ├── utils/
+│   │   └── data_loader.py
+│   │
+│   ├── train.py           # Training script
+│   └── inference.py       # Model inference
+│
+├── requirements.txt
+├── sweep.yaml
+└── README.md
+```
 
 ---
 
