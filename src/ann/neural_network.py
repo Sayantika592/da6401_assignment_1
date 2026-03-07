@@ -26,8 +26,10 @@ class NeuralNetwork:
         self.cli_args = cli_args
         self.layers = []
         self.activations = []
-        sizes = [cli_args.input_size] + cli_args.hidden_sizes + [cli_args.output_size]
-
+        input_size = getattr(cli_args, "input_size", 784)
+        output_size = getattr(cli_args, "output_size", 10)
+        sizes = [input_size] + cli_args.hidden_sizes + [output_size]
+        
         for i in range(len(sizes) - 1):
             self.layers.append(Linear(sizes[i], sizes[i+1], weight_init=cli_args.weight_init))
             if i < len(sizes) - 2:  # Add activation for hidden layers

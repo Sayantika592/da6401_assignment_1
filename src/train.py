@@ -34,7 +34,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Train a neural network')
     
     parser.add_argument("-w_p", "--wandb_project", default=None)
-    parser.add_argument("-m", "--model_path", required=True)
+    parser.add_argument("-m", "--model_path", default="models")
     parser.add_argument("-d", "--dataset", required=True)
     parser.add_argument("-e", "--epochs", type=int, required=True)
     parser.add_argument("-b", "--batch_size", type=int, required=True)
